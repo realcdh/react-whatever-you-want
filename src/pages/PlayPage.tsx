@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { useStations } from "../hooks/useStations.ts";
 import { useSettings } from "../context/SettingsContext.tsx";
 import type { Station } from "../types/station.ts";
+import StationNameplate from "../components/StationNameplate.tsx";
 
 function pickRandom(pool: Station[]): Station {
   const i = Math.floor(Math.random() * pool.length);
@@ -90,20 +91,16 @@ function PlayPage() {
   }
 
   return (
-    <section>
-      <div>
+    <section className="screen">
+      <div className="hud">
         <span>SCORE: {score}</span>
-        <span> · {timeLeft}s</span>
+        <span className={timeLeft <= 10 ? "time-warning" : ""}>{timeLeft}s</span>
       </div>
 
-      <div>
-        <span>{current.line}</span> <strong>{current.name}</strong>
-        <div>
-          {current.nameEng} | {current.nameChn} | {current.nameJpn}
-        </div>
-      </div>
+      <StationNameplate station={current} />
 
       <input
+        className="type-input"
         value={input}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -115,11 +112,20 @@ function PlayPage() {
       />
 
       {paused && (
-        <div role="dialog" aria-label="일시정지 메뉴">
+        <div className="esc-overlay" role="dialog" aria-label="일시정지 메뉴">
           <h2>일시정지</h2>
-          <button onClick={() => setPaused(false)}>계속하기</button>
-          <button onClick={restart}>다시 시작</button>
-          <button onClick={() => navigate("/")}>메인 화면으로</button>
+          <button className="metro-btn" onClick={() => setPaused(false)}>
+            <span className="arrow">➔</span>
+            <span className="label">계속하기</span>
+          </button>
+          <button className="metro-btn" onClick={restart}>
+            <span className="arrow">➔</span>
+            <span className="label">다시 시작</span>
+          </button>
+          <button className="metro-btn" onClick={() => navigate("/")}>
+            <span className="arrow">➔</span>
+            <span className="label">메인 화면으로</span>
+          </button>
         </div>
       )}
     </section>
