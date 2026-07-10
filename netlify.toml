@@ -1,0 +1,25 @@
+# Netlify 배포 설정
+
+[build]
+  command = "npm run build"   # Vite 빌드 → dist/ 생성
+  publish = "dist"            # 이 폴더를 배포
+
+[build.environment]
+  NODE_VERSION = "20"         # 빌드에 쓸 Node 버전 고정
+
+# 1) API 프록시 (가장 먼저 매칭)
+#    브라우저가 /subwayApi/... 로 요청하면, Netlify 서버가 서울시 API로 대신 중계합니다.
+#    → 서버 측 요청이라 CORS/HTTPS(혼합 콘텐츠) 문제가 없습니다. (dev의 vite 프록시와 같은 역할)
+[[redirects]]
+  from = "/subwayApi/*"
+  to = "http://openapi.seoul.go.kr:8088/:splat"
+  status = 200
+  force = true
+
+# 2) SPA 폴백 (그 외 모든 경로)
+#    실제 파일(assets 등)은 그대로 서빙하고, 없는 경로는 index.html로 보냅니다.
+#    → /play 등에서 새로고침해도 404가 나지 않습니다.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
