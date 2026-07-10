@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import type { ChangeEvent, KeyboardEvent } from "react";
+import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { useStations } from "../hooks/useStations.ts";
 import { useSettings } from "../context/SettingsContext.tsx";
 import type { Station } from "../types/station.ts";
 
-// 배열에서 랜덤으로 하나 뽑기
 function pickRandom(pool: Station[]): Station {
   const i = Math.floor(Math.random() * pool.length);
   return pool[i];
@@ -20,8 +19,8 @@ function PlayPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [current, setCurrent] = useState<Station | null>(null);
   const [input, setInput] = useState("");
+  const [paused, setPaused] = useState(false);
 
-  // 선택한 호선에 맞는 역 목록 준비
   const words = useMemo(() => {
     const pool =
       line === "전체 호선" ? stations : stations.filter((s) => s.line === line);
@@ -39,15 +38,23 @@ function PlayPage() {
 
   // 1초마다 시간 감소
   useEffect(() => {
-    if (timeLeft <= 0) return;
+    if (timeLeft <= 0 || paused) return;
     const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [timeLeft]);
+  }, [timeLeft, paused]);
 
-  // 시간이 다 되면 결과 페이지로 점수 전달
   useEffect(() => {
     if (timeLeft <= 0) navigate("/result", { state: { score } });
   }, [timeLeft, score, navigate]);
+
+  // ESC 키로 일시정지 토글
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setPaused((p) => !p);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   if (loading) return <p>역 정보를 불러오는 중…</p>;
   if (error) return <p>오류: {error}</p>;
@@ -55,6 +62,7 @@ function PlayPage() {
   if (!current) return <p>준비 중…</p>;
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
+    if (paused) return;
     const val = e.target.value;
     setInput(val);
     if (current && val.trim() === current.name) {
@@ -64,13 +72,21 @@ function PlayPage() {
     }
   }
 
-  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && current) {
       const val = input.trim();
       if (val.length > 0 && val !== current.name) {
-        setInput(""); // 오답이면 초기화
+        setInput("");
       }
     }
+  }
+
+  function restart() {
+    setScore(0);
+    setTimeLeft(60);
+    setInput("");
+    setCurrent(pickRandom(words));
+    setPaused(false);
   }
 
   return (
@@ -94,9 +110,18 @@ function PlayPage() {
         autoFocus
         autoComplete="off"
         spellCheck={false}
-        placeholder="Type Hurry!"
+        placeholder="역 이름을 입력하세요"
         aria-label="역 이름 입력"
       />
+
+      {paused && (
+        <div role="dialog" aria-label="일시정지 메뉴">
+          <h2>일시정지</h2>
+          <button onClick={() => setPaused(false)}>계속하기</button>
+          <button onClick={restart}>다시 시작</button>
+          <button onClick={() => navigate("/")}>메인 화면으로</button>
+        </div>
+      )}
     </section>
   );
 }
