@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Metro - Desktop Edition</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif; 
+            background-color: #f2f2e9; 
+            margin: 0; 
+            overflow: hidden; 
+            color: #333; 
+            user-select: none; 
+        }
+
+        /* 캔버스 배경 설정 */
+        #bg-wrapper { 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; 
+            filter: blur(6px); opacity: 0.7; 
+            transition: filter 1s ease-in-out, opacity 1s ease-in-out; 
+        }
+        #bg-canvas { display: block; width: 100%; height: 100%; }
+
+        /* 공통 UI 레이어 */
+        #ui-layer { 
+            position: relative; z-index: 10; width: 100vw; height: 100vh; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        }
+        
+        /* 미니메트로 스타일 메뉴 버튼 */
+        .metro-btn { 
+            display: flex; align-items: center; gap: 12px; cursor: pointer; 
+            transition: transform 0.1s ease-out; pointer-events: auto;
+        }
+        .metro-btn:hover { transform: translateX(10px); }
+        .metro-btn:active { transform: translateX(5px); }
+        .metro-btn-bg { background-color: #568EBA; padding: 4px 12px; color: white; font-weight: 700;}
+
+        /* 타이핑 입력창 (알약 모양) */
+        .custom-input {
+            background: rgba(255,255,255,0.9);
+            border: 4px solid #333;
+            border-radius: 9999px; /* 완전히 둥근 끝 */
+            outline: none;
+            transition: all 0.2s;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+        }
+        .custom-input:focus {
+            border-color: #0052A4;
+            transform: translateY(-2px);
+            box-shadow: 4px 6px 0px rgba(0,0,0,0.15);
+        }
+
+        /* 상단 점수 및 시간 표시 바 */
+        .top-bar {
+            position: absolute; top: 0; width: 100%; padding: 2rem 3rem; 
+            display: flex; justify-content: space-between; 
+            font-weight: 900; font-size: 1.8rem; pointer-events: none; 
+            text-shadow: 2px 2px 0px #fff, -2px -2px 0px #fff, 2px -2px 0px #fff, -2px 2px 0px #fff;
+        }
+
+        /* ESC 일시정지 오버레이 그래픽 */
+        .esc-overlay { 
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(8px); 
+            z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+        }
+        .esc-hub-graphic {
+            width: 150px; height: 150px; border-radius: 50%; background: #333; 
+            position: relative; margin-bottom: 40px; animation: pulse-hub 2s infinite ease-in-out;
+        }
+        .esc-hub-graphic::before, .esc-hub-graphic::after {
+            content: ''; position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); border-radius: 50%; border: 15px solid rgba(0,0,0,0.1);
+        }
+        .esc-hub-graphic::before { width: 200px; height: 200px; }
+        .esc-hub-graphic::after { width: 250px; height: 250px; border-width: 8px; border-color: rgba(0,0,0,0.05); }
+
+        /* 애니메이션 키프레임 */
+        @keyframes slideUpFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popSuccess { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); filter: brightness(1.2); } 100% { transform: scale(0.9) translateY(-20px); opacity: 0; } }
+        @keyframes shakeError { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pulse-hub { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes pulse-train { 0%, 100% { transform: scale(1); opacity:0.8;} 50% { transform: scale(1.1); opacity:1;} }
+        @keyframes flow-train-1 { 0% { transform: translate(-300px, 0); } 100% { transform: translate(300px, 0); } }
+        @keyframes flow-train-2 { 0% { transform: translate(300px, 300px); } 100% { transform: translate(-300px, -300px); } }
+
+        /* 애니메이션 적용 클래스 */
+        .animate-enter { animation: slideUpFadeIn 0.3s ease-out forwards; }
+        .animate-success { animation: popSuccess 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animate-error { animation: shakeError 0.4s ease-in-out; border-color: #e60000 !important; color: #e60000 !important; }
+        .time-warning { color: #e60000; animation: pulse 1s infinite; }
+        
+        /* ESC 모션 애니메이션용 클래스 */
+        .anim-train-pulse { animation: pulse-train 1.5s infinite ease-in-out; }
+        .animate-flow-1 { animation: flow-train-1 8s infinite linear; }
+        .animate-flow-2 { animation: flow-train-2 11s infinite linear 2s; }
+    </style>
+</head>
+<body>
+
+    <div id="bg-wrapper">
+        <canvas id="bg-canvas"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        
+        <!-- [1] 상단 정보바 (게임 중에만 표시) -->
+        <div class="top-bar hidden" id="hud">
+            <div id="score-display">SCORE: 0</div>
+            <div id="time-display">60s</div>
+        </div>
+
+        <div id="start-screen" class="flex flex-col items-start animate-enter">
+            <!-- 타이틀 디자인 -->
+            <div class="flex items-end gap-3 mb-8">
+                <h1 class="text-6xl md:text-8xl font-black text-[#333] tracking-tighter m-0 leading-none" style="letter-spacing: -3px;">Typing Metro</h1>
+                <div class="flex items-center gap-1 mb-2">
+                    <div class="w-6 h-6 rounded-full border-[5px] border-[#333] bg-white box-border"></div>
+                    <div class="w-4 h-4 border-[5px] border-[#333] bg-white box-border mt-2"></div>
+                </div>
+            </div>
+            
+            <!-- 선택 메뉴 버튼들 -->
+            <div class="flex flex-col items-start gap-2 text-2xl md:text-4xl font-bold text-white tracking-tight pl-2">
+                <div class="metro-btn" id="btn-start">
+                    <span class="text-[#333] text-4xl leading-none inline-block">➔</span>
+                    <span class="metro-btn-bg">시작</span>
+                </div>
+                <div class="metro-btn" id="btn-region">
+                    <span class="text-[#333] text-4xl leading-none inline-block rotate-90">➔</span>
+                    <span class="metro-btn-bg" id="text-region">지역 : 서울 지역</span>
+                </div>
+                <div class="metro-btn" id="btn-line">
+                    <span class="text-[#333] text-4xl leading-none inline-block rotate-90">➔</span>
+                    <span class="metro-btn-bg" id="text-line">호선 : 3호선</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-area" class="hidden flex-col items-center justify-center w-full max-w-2xl px-6">
+            <!-- 역명판이 들어갈 컨테이너 -->
+            <div id="word-container" class="flex items-center justify-center w-full h-32 mb-10"></div>
+            <!-- 사용자 타이핑 입력창 -->
+            <input type="text" id="type-input" class="custom-input w-full max-w-md text-center text-4xl py-4 font-bold pointer-events-auto" autocomplete="off" spellcheck="false" placeholder="Type Hurry!">
+        </div>
+
+        <div id="esc-menu" class="esc-overlay hidden">
+            <!-- 중앙 애니메이션 허브 그래픽 -->
+            <div class="esc-hub-graphic relative">
+                 <div class="absolute w-[800px] h-4 bg-[#2B3990] top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 -rotate-12 opacity-80 rounded-full"></div>
+                 <div class="absolute w-[800px] h-4 bg-[#EF7C1C] top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 rotate-45 opacity-80 rounded-full"></div>
+                 
+                 <div class="absolute top-1/2 left-1/2 w-full h-full -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                     <div class="absolute w-8 h-8 bg-[#333] rotate-45 animate-flow-1 anim-train-pulse top-1/2"></div>
+                     <div class="absolute w-6 h-6 rounded-full bg-[#f2f2e9] border-4 border-[#333] animate-flow-2 anim-train-pulse left-1/2"></div>
+                 </div>
+                 
+                 <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full"></div>
+            </div>
+            
+            <h2 class="text-5xl font-black mb-12 text-[#333]">일시정지</h2>
+            <!-- ESC 메뉴 옵션 -->
+            <div class="flex flex-col gap-3 text-2xl font-bold">
+                <div class="metro-btn" onclick="resumeGame()">
+                    <span class="text-[#333] text-4xl leading-none inline-block">➔</span>
+                    <span class="metro-btn-bg">계속하기</span>
+                </div>
+                <div class="metro-btn" onclick="restartGame()">
+                    <span class="text-[#333] text-4xl leading-none inline-block -rotate-[135deg]">➔</span>
+                    <span class="metro-btn-bg">다시 시작</span>
+                </div>
+                <div class="metro-btn" onclick="showMainMenuFromEsc()">
+                    <span class="text-[#333] text-4xl leading-none inline-block rotate-180">➔</span>
+                    <span class="metro-btn-bg">메인 화면으로</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="game-over-screen" class="hidden text-center flex-col items-center">
+            <h2 class="text-6xl font-black mb-2 text-[#e60000] drop-shadow-md">운행 종료</h2>
+            
+            <!-- 점수 표시 카드 -->
+            <div class="bg-white px-12 py-8 rounded-xl border-4 border-[#333] shadow-[8px_8px_0px_rgba(0,0,0,0.15)] inline-block mb-10 mt-6">
+                <div class="text-gray-500 font-bold uppercase tracking-widest mb-2">최종 점수</div>
+                <div id="final-score" class="text-7xl font-black text-[#333]">0</div>
+            </div>
+            
+            <!-- 돌아가기 버튼 -->
+            <div class="metro-btn" id="restart-btn" style="justify-content: center;">
+                <span class="text-[#333] text-4xl leading-none inline-block -rotate-[135deg]">➔</span>
+                <span class="metro-btn-bg text-3xl font-bold text-white tracking-tight">처음으로 돌아가기</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const subwayData = {
+            "1호선": ["종로3가", "노량진", "신길", "대방", "시청", "서울역", "구로", "창동", "용산", "영등포", "신도림", "회기", "부천", "역곡", "도봉산", "광명", "평택", "수원", "안양", "천안", "동인천", "청량리"],
+            "2호선": ["영등포구청", "역삼", "선릉", "삼성", "종합운동장", "잠실", "강변", "합정", "당산", "신도림", "대림", "신림", "서울대입구", "사당", "서초", "교대", "신촌", "홍대입구", "왕십리", "건대입구", "강남", "을지로3가"],
+            "3호선": ["구파발", "대화", "연신내", "홍제", "독립문", "경복궁", "안국", "종로3가", "충무로", "약수", "고속터미널", "양재", "남부터미널", "교대", "도곡", "수서", "가락시장", "오금", "일원", "대곡"],
+            "4호선": ["당고개", "노원", "창동", "수유", "미아사거리", "혜화", "동대문", "충무로", "명동", "서울역", "신용산", "이촌", "동작", "사당", "과천", "금정", "범계", "평촌", "안산", "오이도", "초지"],
+            "5호선": ["방화", "김포공항", "발산", "화곡", "까치산", "목동", "여의도", "공덕", "광화문", "종로3가", "동대문역사문화공원", "왕십리", "천호", "강동", "올림픽공원", "하남풍산", "마천", "답십리"],
+            "6호선": ["응암", "디지털미디어시티", "합정", "상수", "공덕", "효창공원앞", "삼각지", "이태원", "약수", "청구", "신당", "동묘앞", "안암", "고려대", "석계", "태릉입구", "봉화산", "신내"],
+            "7호선": ["장암", "도봉산", "노원", "태릉입구", "상봉", "건대입구", "뚝섬유원지", "강남구청", "고속터미널", "이수", "보라매", "대림", "가산디지털단지", "광명사거리", "철산", "온수", "부천시청", "부평구청"],
+            "8호선": ["암사", "천호", "강동구청", "몽촌토성", "잠실", "석촌", "가락시장", "문정", "장지", "복정", "모란", "다산", "별내"],
+            "9호선": ["개화", "김포공항", "가양", "염창", "당산", "국회의사당", "여의도", "노량진", "동작", "고속터미널", "신논현", "선정릉", "종합운동장", "석촌", "올림픽공원", "중앙보훈병원"]
+        };
+
+        const subwayColors = {
+            "1호선": "#2B3990", "2호선": "#3CB44A", "3호선": "#F06F28", 
+            "4호선": "#2C9EDE", "5호선": "#8936E0", "6호선": "#B67A26", 
+            "7호선": "#5A6E24", "8호선": "#E51E6E", "9호선": "#C8A730"  
+        };
+
+        const optionsRegion = ['수도권 전체', '서울 지역', '경기/인천'];
+        const optionsLine = ['전체 호선', '1호선', '2호선', '3호선', '4호선', '5호선', '6호선', '7호선', '8호선', '9호선'];
+        
+        let currentRegionIndex = 1; // 기본값: 서울 지역
+        let currentLineIndex = 3;   // 기본값: 3호선
+        
+        let targetWordsArray = [];
+        let currentTargetWord = null; 
+        let currentScore = 0;
+        let gameTimer = 60;
+        let timerIntervalId;
+
+        // DOM 엘리먼트 캐싱
+        const btnRegion = document.getElementById('btn-region');
+        const textRegion = document.getElementById('text-region');
+        const btnLine = document.getElementById('btn-line');
+        const textLine = document.getElementById('text-line');
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('restart-btn');
+        
+        const screenStart = document.getElementById('start-screen');
+        const screenGame = document.getElementById('game-area');
+        const screenGameOver = document.getElementById('game-over-screen');
+        const screenEsc = document.getElementById('esc-menu');
+        
+        const hudBar = document.getElementById('hud');
+        const bgWrapper = document.getElementById('bg-wrapper');
+        const wordContainer = document.getElementById('word-container');
+        const typeInput = document.getElementById('type-input');
+        
+        const displayScore = document.getElementById('score-display');
+        const displayTime = document.getElementById('time-display');
+        const displayFinalScore = document.getElementById('final-score');
+
+        
+        // 지역 및 호선 변경 로직
+        btnRegion.addEventListener('click', () => {
+            currentRegionIndex = (currentRegionIndex + 1) % optionsRegion.length;
+            textRegion.innerText = `지역 : ${optionsRegion[currentRegionIndex]}`;
+        });
+
+        btnLine.addEventListener('click', () => {
+            currentLineIndex = (currentLineIndex + 1) % optionsLine.length;
+            textLine.innerText = `호선 : ${optionsLine[currentLineIndex]}`;
+        });
+
+        // 타이핑 검증 로직
+        typeInput.addEventListener('input', (e) => {
+            const userInput = e.target.value.trim();
+            if (userInput === currentTargetWord.word) {
+                handleCorrectAnswer();
+            }
+        });
+
+        // 오답 시 흔들림 피드백 (엔터키 처리)
+        typeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const userInput = typeInput.value.trim();
+                if (userInput !== currentTargetWord.word && userInput.length > 0) {
+                    typeInput.classList.remove('animate-error');
+                    void typeInput.offsetWidth; // DOM 리플로우 강제 유발(애니메이션 재시작 트릭)
+                    typeInput.classList.add('animate-error');
+                    typeInput.value = ''; 
+                }
+            }
+            if (e.key === 'Escape') {
+                togglePauseMenu();
+            }
+        });
+
+        // 키보드 ESC 전역 감지
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !screenGame.classList.contains('hidden')) {
+                togglePauseMenu();
+            }
+        });
+
+
+        // 설정된 조건(호선)에 맞는 단어풀 만들기
+        function buildTargetWordsArray() {
+            targetWordsArray = [];
+            const selectedLineStr = optionsLine[currentLineIndex];
+            
+            if (selectedLineStr === '전체 호선') {
+                for (const lineKey in subwayData) {
+                    subwayData[lineKey].forEach(station => {
+                        targetWordsArray.push({ word: station, line: lineKey });
+                    });
+                }
+            } else {
+                if(subwayData[selectedLineStr]) {
+                    subwayData[selectedLineStr].forEach(station => {
+                        targetWordsArray.push({ word: station, line: selectedLineStr });
+                    });
+                } else {
+                    // 예외 처리 (폴백)
+                    subwayData['3호선'].forEach(station => {
+                        targetWordsArray.push({ word: station, line: '3호선' });
+                    });
+                }
+            }
+            
+            // 배열 내 단어 중복 제거
+            const uniqueSet = new Set();
+            targetWordsArray = targetWordsArray.filter(item => {
+                if(!uniqueSet.has(item.word)) {
+                    uniqueSet.add(item.word);
+                    return true;
+                }
+                return false;
+            });
+        }
+
+        // 각 역명에 해당하는 다국어 딕셔너리 데이터 세팅
+        const multiLangData = {
+            "종로3가": {eng: "Jongno 3(sam)-ga", chn: "钟路三街", jpn: "チョンノサムガ"},
+            "노량진": {eng: "Noryangjin", chn: "鹭梁津", jpn: "ノリャンジン"},
+            "신길": {eng: "Singil", chn: "新吉", jpn: "シンギル"},
+            "대방": {eng: "Daebang", chn: "大方", jpn: "テバン"},
+            "시청": {eng: "City Hall", chn: "市厅", jpn: "シチョン"},
+            "서울역": {eng: "Seoul Station", chn: "首尔", jpn: "ソウル"},
+            "구로": {eng: "Guro", chn: "九老", jpn: "クロ"},
+            "창동": {eng: "Chang-dong", chn: "仓洞", jpn: "チャンドン"},
+            "용산": {eng: "Yongsan", chn: "龙山", jpn: "ヨンサン"},
+            "영등포": {eng: "Yeongdeungpo", chn: "永登浦", jpn: "ヨンドゥンポ"},
+            "신도림": {eng: "Sindorim", chn: "新道林", jpn: "シンドリム"},
+            "회기": {eng: "Hoegi", chn: "回基", jpn: "フェギ"},
+            "부천": {eng: "Bucheon", chn: "富川", jpn: "プチョン"},
+            "역곡": {eng: "Yeokgok", chn: "驿谷", jpn: "ヨッコク"},
+            "도봉산": {eng: "Dobongsan", chn: "道峰山", jpn: "トボンサン"},
+            "광명": {eng: "Gwangmyeong", chn: "光明", jpn: "クァンミョン"},
+            "평택": {eng: "Pyeongtaek", chn: "平泽", jpn: "ピョンテク"},
+            "수원": {eng: "Suwon", chn: "水原", jpn: "スウォン"},
+            "안양": {eng: "Anyang", chn: "安养", jpn: "アニヤン"},
+            "천안": {eng: "Cheonan", chn: "天安", jpn: "チョナン"},
+            "동인천": {eng: "Dongincheon", chn: "东仁川", jpn: "トンインチョン"},
+            "청량리": {eng: "Cheongnyangni", chn: "清凉里", jpn: "チョンニャンニ"},
+            "영등포구청": {eng: "Yeongdeungpo-gu Office", chn: "永登浦区厅", jpn: "ヨンドゥンポグチョン"},
+            "역삼": {eng: "Yeoksam", chn: "驿三", jpn: "ヨッサム"},
+            "선릉": {eng: "Seolleung", chn: "宣陵", jpn: "ソンルン"},
+            "삼성": {eng: "Samseong", chn: "三成", jpn: "サムソン"},
+            "종합운동장": {eng: "Sports Complex", chn: "综合运动场", jpn: "チョンハブンドンジャン"},
+            "잠실": {eng: "Jamsil", chn: "蚕室", jpn: "チャムシル"},
+            "강변": {eng: "Gangbyeon", chn: "江边", jpn: "カンビョン"},
+            "합정": {eng: "Hapjeong", chn: "合井", jpn: "ハプチョン"},
+            "당산": {eng: "Dangsan", chn: "堂山", jpn: "タンサン"},
+            "대림": {eng: "Daerim", chn: "大林", jpn: "テリム"},
+            "신림": {eng: "Sillim", chn: "新林", jpn: "シンリム"},
+            "서울대입구": {eng: "Seoul Nat`l Univ.", chn: "首尔大学", jpn: "ソウルデイック"},
+            "사당": {eng: "Sadang", chn: "舍堂", jpn: "サダン"},
+            "서초": {eng: "Seocho", chn: "瑞草", jpn: "ソチョ"},
+            "교대": {eng: "Seoul Nat`l Univ. of Education", chn: "首尔教育大学", jpn: "キョデ"},
+            "신촌": {eng: "Sinchon", chn: "新村", jpn: "シンチョン"},
+            "홍대입구": {eng: "Hongik Univ.", chn: "弘益大学", jpn: "ホンデイック"},
+            "왕십리": {eng: "Wangsimni", chn: "往十里", jpn: "ワンシムニ"},
+            "건대입구": {eng: "Konkuk Univ.", chn: "建国大学", jpn: "コンデイック"},
+            "강남": {eng: "Gangnam", chn: "江南", jpn: "カンナム"},
+            "을지로3가": {eng: "Euljiro 3(sam)-ga", chn: "乙支路三街", jpn: "ウルチロサムガ"},
+            "구파발": {eng: "Gupabal", chn: "旧把拨", jpn: "クパバル"},
+            "대화": {eng: "Daehwa", chn: "大化", jpn: "大化"},
+            "연신내": {eng: "Yeonsinnae", chn: "延新川", jpn: "ヨンシンネ"},
+            "홍제": {eng: "Hongje", chn: "弘济", jpn: "ホンジェ"},
+            "독립문": {eng: "Dongnimmun", chn: "独立门", jpn: "トンニンムン"},
+            "경복궁": {eng: "Gyeongbokgung", chn: "景福宫", jpn: "キョンボックン"},
+            "안국": {eng: "Anguk", chn: "安国", jpn: "アングク"},
+            "충무로": {eng: "Chungmuro", chn: "忠武路", jpn: "チュンムロ"},
+            "약수": {eng: "Yaksu", chn: "药水", jpn: "ヤクス"},
+            "고속터미널": {eng: "Express Bus Terminal", chn: "高速巴士", jpn: "コソクターミナル"},
+            "양재": {eng: "Yangjae", chn: "良才", jpn: "ヤンジェ"},
+            "남부터미널": {eng: "Nambu Bus Terminal", chn: "南部客运站", jpn: "ナンブターミナル"},
+            "도곡": {eng: "Dogok", chn: "道谷", jpn: "トゴク"},
+            "수서": {eng: "Suseo", chn: "水西", jpn: "スソ"},
+            "가락시장": {eng: "Garak Market", chn: "可乐市场", jpn: "カラク・シジャン"},
+            "오금": {eng: "Ogeum", chn: "梧琴", jpn: "オグム"},
+            "일원": {eng: "Irwon", chn: "逸院", jpn: "イルォン"},
+            "대곡": {eng: "Daegok", chn: "大谷", jpn: "テゴク"},
+            "당고개": {eng: "Danggogae", chn: "堂岭", jpn: "タンゴゲ"},
+            "노원": {eng: "Nowon", chn: "芦原", jpn: "ノウォン"},
+            "수유": {eng: "Suyu", chn: "水逾", jpn: "スユ"},
+            "미아사거리": {eng: "Miasageori", chn: "弥阿十字路口", jpn: "ミアサゴリ"},
+            "혜화": {eng: "Hyehwa", chn: "惠化", jpn: "ヘファ"},
+            "동대문": {eng: "Dongdaemun", chn: "东大门", jpn: "トンデムン"},
+            "명동": {eng: "Myeong-dong", chn: "明洞", jpn: "ミョンドン"},
+            "신용산": {eng: "Sinyongsan", chn: "新龙山", jpn: "シニョンサン"},
+            "이촌": {eng: "Ichon", chn: "二村", jpn: "イチョン"},
+            "동작": {eng: "Dongjak", chn: "铜雀", jpn: "トンジャク"},
+            "과천": {eng: "Gwacheon", chn: "果川", jpn: "クァチョン"},
+            "금정": {eng: "Geumjeong", chn: "衿井", jpn: "クムジョン"},
+            "범계": {eng: "Beomgye", chn: "凡溪", jpn: "ポムゲ"},
+            "평촌": {eng: "Pyeongchon", chn: "坪村", jpn: "ピョンチョン"},
+            "안산": {eng: "Ansan", chn: "安山", jpn: "アンサン"},
+            "오이도": {eng: "Oido", chn: "乌耳岛", jpn: "オイド"},
+            "초지": {eng: "Choji", chn: "草芝", jpn: "チョジ"},
+            "방화": {eng: "Banghwa", chn: "傍花", jpn: "パンファ"},
+            "김포공항": {eng: "Gimpo Intl. Airport", chn: "金浦机场", jpn: "キンポゴンハン"},
+            "발산": {eng: "Balsan", chn: "钵山", jpn: "パルサン"},
+            "화곡": {eng: "Hwagok", chn: "禾谷", jpn: "ファゴク"},
+            "까치산": {eng: "Kkachisan", chn: "喜鹊山", jpn: "カチサン"},
+            "목동": {eng: "Mok-dong", chn: "木洞", jpn: "モクトン"},
+            "여의도": {eng: "Yeouido", chn: "汝矣岛", jpn: "ヨイド"},
+            "공덕": {eng: "Gongdeok", chn: "孔德", jpn: "コンドク"},
+            "광화문": {eng: "Gwanghwamun", chn: "光化门", jpn: "クァンファムン"},
+            "동대문역사문화공원": {eng: "Dongdaemun History & Culture Park", chn: "东大门역사문화공원", jpn: "トンデムンヨクサムンファゴンウォン"},
+            "천호": {eng: "Cheonho", chn: "千戶", jpn: "チョンホ"},
+            "강동": {eng: "Gangdong", chn: "江东", jpn: "カンドン"},
+            "올림픽공원": {eng: "Olympic Park", chn: "奥林匹克公园", jpn: "オリンピックゴンウォン"},
+            "하남풍산": {eng: "Hanam Pungsan", chn: "河南丰山", jpn: "ハナンプンサン"},
+            "마천": {eng: "Macheon", chn: "马川", jpn: "マチョン"},
+            "답십리": {eng: "Dapsimni", chn: "踏十里", jpn: "タプシムニ"},
+            "응암": {eng: "Eungam", chn: "鹰岩", jpn: "ウンアム"},
+            "디지털미디어시티": {eng: "Digital Media City", chn: "数码媒体城", jpn: "デジタルメディアシティ"},
+            "상수": {eng: "Sangsu", chn: "上水", jpn: "サンス"},
+            "효창공원앞": {eng: "Hyochang park", chn: "孝昌公园", jpn: "ヒョチャンゴンウォンアプ"},
+            "삼각지": {eng: "Samgakji", chn: "三角地", jpn: "サムガクチ"},
+            "이태원": {eng: "Itaewon", chn: "梨泰院", jpn: "イテウォン"},
+            "청구": {eng: "Cheonggu", chn: "青丘", jpn: "チョング"},
+            "신당": {eng: "Sindang", chn: "新堂", jpn: "シンダン"},
+            "동묘앞": {eng: "Dongmyo", chn: "东庙", jpn: "トンミョアプ"},
+            "안암": {eng: "Anam", chn: "安岩", jpn: "アナム"},
+            "고려대": {eng: "Korea Univ.", chn: "高丽大学", jpn: "コリョデ"},
+            "석계": {eng: "Seokgye", chn: "石溪", jpn: "ソッケ"},
+            "태릉입구": {eng: "Taereung", chn: "泰陵", jpn: "テルンイック"},
+            "봉화산": {eng: "Bonghwasan", chn: "烽火山", jpn: "ポンファサン"},
+            "신내": {eng: "Sinnae", chn: "新內", jpn: "シンネ"},
+            "장암": {eng: "Jangam", chn: "长岩", jpn: "チャンアム"},
+            "상봉": {eng: "Sangbong", chn: "上凤", jpn: "サンボン"},
+            "뚝섬유원지": {eng: "Ttukseom Park", chn: "纛岛游园地", jpn: "トゥッソム・ユウォンジ"},
+            "강남구청": {eng: "Gangnam-gu Office", chn: "江南区厅", jpn: "カンナムグチョン"},
+            "이수": {eng: "Isu", chn: "梨水", jpn: "イス"},
+            "보라매": {eng: "Boramae", chn: "波拉美", jpn: "ポラメ"},
+            "가산디지털단지": {eng: "Gasan Digital Complex", chn: "加山数码园区", jpn: "カサン・デジタルダンジ"},
+            "광명사거리": {eng: "Gwangmyeongsageori", chn: "光明十字路口", jpn: "クァンミョンサゴリ"},
+            "철산": {eng: "Cheolsan", chn: "铁山", jpn: "チョルサン"},
+            "온수": {eng: "Onsu", chn: "温水", jpn: "オンス"},
+            "부천시청": {eng: "Bucheon City Hall", chn: "富川市厅", jpn: "プチョンシチョン"},
+            "부평구청": {eng: "Bupyeong-gu Office", chn: "富平区厅", jpn: "プピョングチョン"},
+            "암사": {eng: "Amsa", chn: "岩寺", jpn: "アムサ"},
+            "강동구청": {eng: "Gangdong-gu Office", chn: "江东区厅", jpn: "カンドングチョン"},
+            "몽촌토성": {eng: "Mongchontoseong", chn: "梦村土城", jpn: "モンチョントソン"},
+            "석촌": {eng: "Seokchon", chn: "石村", jpn: "ソクチョン"},
+            "문정": {eng: "Munjeong", chn: "文井", jpn: "ムンジョン"},
+            "장지": {eng: "Jangji", chn: "长旨", jpn: "チャンジ"},
+            "복정": {eng: "Bokjeong", chn: "福井", jpn: "ポクチョン"},
+            "모란": {eng: "Moran", chn: "牡丹", jpn: "モラン"},
+            "다산": {eng: "Dasan", chn: "茶山", jpn: "タサン"},
+            "별내": {eng: "Byeollae", chn: "別內", jpn: "ピョルネ"},
+            "개화": {eng: "Gaehwa", chn: "開化", jpn: "ケファ"},
+            "가양": {eng: "Gayang", chn: "加阳", jpn: "カヤン"},
+            "염창": {eng: "Yeomchang", chn: "盐仓", jpn: "ヨムチャン"},
+            "국회의사당": {eng: "National Assembly", chn: "国会议事堂", jpn: "ククェウィサダン"},
+            "신논현": {eng: "Sinnonhyeon", chn: "新论岘", jpn: "シンノンヒョン"},
+            "선정릉": {eng: "Seonjeongneung", chn: "宣靖陵", jpn: "ソンジョンヌン"},
+            "중앙보훈병원": {eng: "VHS Medical Center", chn: "中央报勋医院", jpn: "チュンアンボフンビョンウォン"}
+        };
+
+        // 화면에 새로운 역명판 그리기
+        function renderNewWord() {
+            // 랜덤 뽑기
+            const randomIndex = Math.floor(Math.random() * targetWordsArray.length);
+            currentTargetWord = targetWordsArray[randomIndex];
+            
+            // 호선 색상 및 번호 문자열 추출
+            const color = subwayColors[currentTargetWord.line] || "#333";
+            const lineNum = currentTargetWord.line.replace('호선', '');
+            
+            // 다국어 데이터 가져오기 (없으면 기본값 동적 생성)
+            const stationName = currentTargetWord.word;
+            const multiLang = multiLangData[stationName] || {
+                eng: stationName + " Station",
+                chn: stationName,
+                jpn: stationName
+            };
+            
+            // 다국어 역명판 HTML 주입
+            wordContainer.innerHTML = `
+                <div class="relative flex items-center justify-center w-full min-w-[320px] md:min-w-[450px] mb-4">
+                    <div class="absolute w-[150%] h-6" style="background-color: ${color}; z-index: -1;"></div>
+                    
+                    <div class="flex items-center bg-white rounded-full pl-3 pr-8 py-3 border-[8px] shadow-sm" style="border-color: ${color}; min-width: 280px;">
+                        <div class="flex items-center justify-center text-white rounded-full w-14 h-14 text-2xl font-black mr-4 shrink-0" style="background-color: ${color};">
+                            ${lineNum}
+                        </div>
+                        <div class="flex flex-col items-center justify-center w-full">
+                            <div class="text-4xl md:text-5xl font-black text-[#333] tracking-widest whitespace-nowrap mb-1" id="current-word-text">${stationName}</div>
+                            <div class="flex gap-2 text-[10px] md:text-xs text-gray-500 font-bold tracking-widest border-t-2 border-gray-200 pt-1 w-full justify-center">
+                                <span>${multiLang.eng}</span><span class="text-gray-300">|</span><span>${multiLang.chn}</span><span class="text-gray-300">|</span><span>${multiLang.jpn}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            wordContainer.className = "flex items-center justify-center w-full h-32 animate-enter";
+        }
+
+        // 정답을 맞췄을 때
+        function handleCorrectAnswer() {
+            currentScore++;
+            updateHUDText();
+            typeInput.value = '';
+            
+            const nameplateUI = wordContainer.firstElementChild;
+            if(nameplateUI) nameplateUI.classList.add('animate-success'); // 날아가는 모션
+            
+            // 약간의 딜레이 후 다음 단어 등장
+            setTimeout(() => {
+                renderNewWord();
+            }, 300);
+        }
+
+        // 게임 시작
+        function startGame() {
+            buildTargetWordsArray(); 
+            
+            currentScore = 0;
+            gameTimer = 60;
+            updateHUDText();
+            
+            // 화면 전환
+            screenStart.classList.add('hidden');
+            screenGameOver.classList.add('hidden');
+            screenGame.classList.remove('hidden');
+            screenGame.classList.add('flex');
+            hudBar.classList.remove('hidden');
+            
+            // 플레이 시 백그라운드 블러 효과 강화 (글자에 집중)
+            bgWrapper.style.filter = 'blur(16px)';
+            bgWrapper.style.opacity = '0.4';
+            
+            typeInput.value = '';
+            typeInput.focus();
+            displayTime.classList.remove('time-warning');
+            
+            renderNewWord();
+            
+            // 타이머 가동
+            clearInterval(timerIntervalId);
+            timerIntervalId = setInterval(tickTimer, 1000);
+        }
+
+        // 1초마다 실행되는 타이머 로직
+        function tickTimer() {
+            gameTimer--;
+            updateHUDText();
+            
+            if (gameTimer <= 10) {
+                displayTime.classList.add('time-warning'); // 10초 미만 붉게 깜빡임
+            }
+            if (gameTimer <= 0) {
+                endGame();
+            }
+        }
+
+        function updateHUDText() {
+            displayScore.innerText = `SCORE: ${currentScore}`;
+            displayTime.innerText = `${gameTimer}s`;
+        }
+
+        // 게임 오버 처리
+        function endGame() {
+            clearInterval(timerIntervalId);
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            hudBar.classList.add('hidden');
+            
+            displayFinalScore.innerText = currentScore;
+            
+            // 종료 화면에 맞게 블러 원복
+            bgWrapper.style.filter = 'blur(6px)';
+            bgWrapper.style.opacity = '0.7';
+            
+            screenGameOver.classList.remove('hidden');
+            screenGameOver.classList.add('flex', 'animate-enter');
+        }
+
+        function togglePauseMenu() {
+            if(screenEsc.classList.contains('hidden')) {
+                // 일시정지 켬
+                clearInterval(timerIntervalId);
+                screenEsc.classList.remove('hidden');
+                screenEsc.classList.add('animate-enter');
+                typeInput.blur();
+            } else {
+                // 일시정지 끔 (resumeGame과 동일)
+                resumeGame();
+            }
+        }
+
+        function resumeGame() {
+            screenEsc.classList.add('hidden');
+            timerIntervalId = setInterval(tickTimer, 1000); // 타이머 재가동
+            typeInput.focus();
+        }
+
+        function restartGame() {
+            screenEsc.classList.add('hidden');
+            startGame();
+        }
+
+        function showMainMenuFromEsc() {
+            screenEsc.classList.add('hidden');
+            clearInterval(timerIntervalId);
+            
+            screenGame.classList.add('hidden');
+            screenGame.classList.remove('flex');
+            hudBar.classList.add('hidden');
+            
+            bgWrapper.style.filter = 'blur(6px)';
+            bgWrapper.style.opacity = '0.7';
+            
+            screenStart.classList.remove('hidden');
+        }
+
+        btnStart.addEventListener('click', startGame);
+        btnRestart.addEventListener('click', () => {
+            screenGameOver.classList.add('hidden');
+            screenGameOver.classList.remove('flex');
+            screenStart.classList.remove('hidden');
+        });
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let canvasW, canvasH;
+        let animatedLinesData = [];
+        let animatedTrains = [];
+
+        // 캔버스 사이즈 및 애니메이션 데이터 초기화
+        function initCanvas() {
+            canvasW = window.innerWidth;
+            canvasH = window.innerHeight;
+            canvas.width = canvasW;
+            canvas.height = canvasH;
+            
+            animatedLinesData = [];
+            animatedTrains = [];
+            
+            const lineCount = Math.floor(canvasW / 250) + 2; 
+            const themeColors = Object.values(subwayColors);
+            
+            for (let i = 0; i < lineCount; i++) {
+                const points = [];
+                
+                // 1. 화면 외곽(가장자리)에서 무작위 출발점 설정
+                const edge = Math.floor(Math.random() * 4);
+                let currX, currY;
+                if (edge === 0) { currX = Math.random() * canvasW; currY = -100; } // Top
+                else if (edge === 1) { currX = canvasW + 100; currY = Math.random() * canvasH; } // Right
+                else if (edge === 2) { currX = Math.random() * canvasW; currY = canvasH + 100; } // Bottom
+                else { currX = -100; currY = Math.random() * canvasH; } // Left
+                
+                points.push({x: currX, y: currY});
+                
+                // 2. 화면 중앙(도심)을 향하도록 초기 각도 계산
+                const targetX = canvasW / 2 + (Math.random() - 0.5) * (canvasW * 0.4);
+                const targetY = canvasH / 2 + (Math.random() - 0.5) * (canvasH * 0.4);
+                const angleToTarget = Math.atan2(targetY - currY, targetX - currX);
+                
+                // 가장 가까운 45도(Math.PI/4) 단위의 방향(0~7)으로 보정
+                let currentDir = Math.round(angleToTarget / (Math.PI / 4));
+                
+                // 각 노선은 4~6개의 직선 구간을 가짐
+                const nodeCount = 4 + Math.floor(Math.random() * 3); 
+                
+                for(let j = 0; j < nodeCount; j++) {
+                    // 구불거림을 줄이기 위해 한 번에 길게(200~500px) 뻗음
+                    const dist = 200 + Math.random() * 300; 
+                    
+                    // 첫 구간 이후, 30% 확률로만 45도 방향을 꺾음 (규칙적이고 곧은 선형 유지)
+                    if (j > 0 && Math.random() > 0.7) {
+                        currentDir += (Math.random() > 0.5 ? 1 : -1);
+                    }
+                    
+                    const dirAngle = currentDir * (Math.PI / 4); 
+                    let nextX = currX + Math.cos(dirAngle) * dist;
+                    let nextY = currY + Math.sin(dirAngle) * dist;
+                    
+                    points.push({x: nextX, y: nextY});
+                    currX = nextX;
+                    currY = nextY;
+                }
+                
+                animatedLinesData.push({
+                    color: themeColors[i % themeColors.length],
+                    points: points
+                });
+
+                // 각 노선마다 달리는 열차 데이터 객체 추가
+                animatedTrains.push({
+                    lineIndex: i,
+                    segment: 0,
+                    progress: 0,
+                    speed: 0.0015 + Math.random() * 0.0015, // 안정적인 이동 속도
+                    direction: 1
+                });
+            }
+        }
+
+        // 매 프레임(60fps)마다 호출되는 그리기 함수
+        function renderCanvasFrame() {
+            ctx.clearRect(0, 0, canvasW, canvasH);
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // 1. 선(트랙) 그리기
+            animatedLinesData.forEach((line) => {
+                ctx.beginPath();
+                ctx.lineWidth = 14;
+                ctx.strokeStyle = line.color;
+                
+                ctx.moveTo(line.points[0].x, line.points[0].y);
+                for(let i=1; i<line.points.length; i++) {
+                    ctx.lineTo(line.points[i].x, line.points[i].y);
+                }
+                ctx.stroke();
+                
+                // 역(Station) 기호 그리기
+                ctx.lineWidth = 4;
+                line.points.forEach((pt, idx) => {
+                    ctx.beginPath();
+                    // 일부 점은 큰 환승역 모양으로
+                    if(idx === Math.floor(line.points.length/2)) {
+                        ctx.arc(pt.x, pt.y, 16, 0, Math.PI * 2);
+                        ctx.fillStyle = '#f2f2e9';
+                        ctx.fill();
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 6;
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.arc(pt.x, pt.y, 4, 0, Math.PI*2);
+                        ctx.fillStyle = '#333';
+                        ctx.fill();
+                    } else {
+                        // 일반역
+                        ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+                        ctx.fillStyle = '#f2f2e9';
+                        ctx.fill();
+                        ctx.strokeStyle = '#333';
+                        ctx.stroke();
+                    }
+                });
+            });
+
+            // 2. 열차 그리기 및 이동 로직
+            animatedTrains.forEach(train => {
+                const line = animatedLinesData[train.lineIndex];
+                if(line.points.length < 2) return;
+                
+                const p1 = line.points[train.segment];
+                const p2 = line.points[train.segment + train.direction];
+                
+                if(!p2) {
+                    train.direction *= -1;
+                    train.segment += train.direction;
+                    return;
+                }
+
+                // 현재 위치 계산 (보간법)
+                const tx = p1.x + (p2.x - p1.x) * train.progress;
+                const ty = p1.y + (p2.y - p1.y) * train.progress;
+                const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+
+                ctx.save();
+                ctx.translate(tx, ty);
+                ctx.rotate(angle);
+                
+                // 열차 본체
+                ctx.fillStyle = line.color;
+                ctx.beginPath();
+                ctx.roundRect(-16, -8, 32, 16, 4);
+                ctx.fill();
+                
+                // 열차 창문 디테일
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-8, -4, 6, 8);
+                ctx.fillRect(2, -4, 6, 8);
+                
+                ctx.restore();
+
+                // 진행도 업데이트
+                train.progress += train.speed;
+                
+                // 다음 세그먼트로 이동
+                if(train.progress >= 1) {
+                    train.progress = 0;
+                    train.segment += train.direction;
+                    
+                    // 끝에 도달하면 방향 전환
+                    if(train.segment >= line.points.length -1 || train.segment <= 0) {
+                        train.direction *= -1;
+                        if(train.segment <= 0) train.segment = 0;
+                    }
+                }
+            });
+
+            requestAnimationFrame(renderCanvasFrame);
+        }
+
+        // 창 크기 변경 시 캔버스 재설정
+        window.addEventListener('resize', initCanvas);
+
+        // 초기 시작
+        window.onload = function() {
+            initCanvas();
+            renderCanvasFrame(); 
+        };
+    </script>
+</body>
+</html>
