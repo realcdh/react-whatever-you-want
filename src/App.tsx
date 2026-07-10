@@ -6,7 +6,6 @@ function App() {
   return (
     <>
       <BackgroundCanvas />
-      <NavBar />
       <main>
         <Outlet />
       </main>

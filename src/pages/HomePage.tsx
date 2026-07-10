@@ -8,22 +8,26 @@ function HomePage() {
   const { region, line, setRegion, setLine } = useSettings();
   const navigate = useNavigate();
 
-  // 목록에서 다음 항목으로 순환
   function cycle(list: string[], current: string): string {
     const nextIndex = (list.indexOf(current) + 1) % list.length;
     return list[nextIndex];
   }
 
   return (
-    <section>
-      <h1>Typing Metro</h1>
+    <section className="screen" style={{ alignItems: "flex-start", paddingLeft: "min(8vw, 6rem)" }}>
+      <h1 className="title">Typing Metro</h1>
 
-      <button onClick={() => navigate("/play")}>시작</button>
-      <button onClick={() => setRegion(cycle(REGIONS, region))}>
-        지역 : {region}
+      <button className="metro-btn" onClick={() => navigate("/play")}>
+        <span className="arrow">➔</span>
+        <span className="label">시작</span>
       </button>
-      <button onClick={() => setLine(cycle(LINES, line))}>
-        호선 : {line}
+      <button className="metro-btn" onClick={() => setRegion(cycle(REGIONS, region))}>
+        <span className="arrow">➔</span>
+        <span className="label">지역 : {region}</span>
+      </button>
+      <button className="metro-btn" onClick={() => setLine(cycle(LINES, line))}>
+        <span className="arrow">➔</span>
+        <span className="label">호선 : {line}</span>
       </button>
     </section>
   );

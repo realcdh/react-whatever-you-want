@@ -6,11 +6,16 @@ function ResultPage() {
   const score = (location.state as { score?: number } | null)?.score ?? 0;
 
   return (
-    <section>
-      <h2>운행 종료</h2>
-      <p>최종 점수</p>
-      <p>{score}</p>
-      <button onClick={() => navigate("/")}>처음으로 돌아가기</button>
+    <section className="screen">
+      <h2 className="result-title">운행 종료</h2>
+      <div className="score-card">
+        <div className="label">최종 점수</div>
+        <div className="value">{score}</div>
+      </div>
+      <button className="metro-btn" onClick={() => navigate("/")}>
+        <span className="arrow">➔</span>
+        <span className="label">처음으로 돌아가기</span>
+      </button>
     </section>
   );
 }
