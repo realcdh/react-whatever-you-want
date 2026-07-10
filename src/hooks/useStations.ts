@@ -10,9 +10,6 @@ export function useStations() {
   useEffect(() => {
     let ignore = false; // 화면을 벗어난 뒤 상태 변경 방지
 
-    setLoading(true);
-    setError(null);
-
     fetchStations()
       .then((data) => {
         if (!ignore) setStations(data);

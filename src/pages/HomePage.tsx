@@ -9,26 +9,35 @@ function HomePage() {
   const navigate = useNavigate();
 
   function cycle(list: string[], current: string): string {
-    const nextIndex = (list.indexOf(current) + 1) % list.length;
-    return list[nextIndex];
+    return list[(list.indexOf(current) + 1) % list.length];
   }
 
   return (
-    <section className="screen" style={{ alignItems: "flex-start", paddingLeft: "min(8vw, 6rem)" }}>
-      <h1 className="title">Typing Metro</h1>
+    <section className="start-screen">
+      <div className="start-inner">
+        <div className="start-title-row">
+          <h1 className="start-title">Typing Metro</h1>
+          <div className="start-dots">
+            <div className="dot-circle" />
+            <div className="dot-square" />
+          </div>
+        </div>
 
-      <button className="metro-btn" onClick={() => navigate("/play")}>
-        <span className="arrow">➔</span>
-        <span className="label">시작</span>
-      </button>
-      <button className="metro-btn" onClick={() => setRegion(cycle(REGIONS, region))}>
-        <span className="arrow">➔</span>
-        <span className="label">지역 : {region}</span>
-      </button>
-      <button className="metro-btn" onClick={() => setLine(cycle(LINES, line))}>
-        <span className="arrow">➔</span>
-        <span className="label">호선 : {line}</span>
-      </button>
+        <div className="start-menu">
+          <button className="metro-btn" onClick={() => navigate("/play")}>
+            <span className="arrow">➔</span>
+            <span className="label">시작</span>
+          </button>
+          <button className="metro-btn" onClick={() => setRegion(cycle(REGIONS, region))}>
+            <span className="arrow rot90">➔</span>
+            <span className="label">지역 : {region}</span>
+          </button>
+          <button className="metro-btn" onClick={() => setLine(cycle(LINES, line))}>
+            <span className="arrow rot90">➔</span>
+            <span className="label">호선 : {line}</span>
+          </button>
+        </div>
+      </div>
     </section>
   );
 }

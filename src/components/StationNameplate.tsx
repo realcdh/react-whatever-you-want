@@ -1,18 +1,23 @@
 import type { Station } from "../types/station.ts";
 import { getLineColor } from "../constants/subwayColors.ts";
 
+// "3호선" → "3", 이름 노선(수인분당선 등)은 그대로
 function lineBadge(line: string): string {
   return /^\d+호선$/.test(line) ? line.replace("호선", "") : line;
 }
 
 function StationNameplate({ station }: { station: Station }) {
   const color = getLineColor(station.line);
+  const numbered = /^\d+호선$/.test(station.line);
 
   return (
     <div className="nameplate">
       <div className="nameplate-bar" style={{ backgroundColor: color }} />
       <div className="nameplate-pill" style={{ borderColor: color }}>
-        <div className="nameplate-badge" style={{ backgroundColor: color }}>
+        <div
+          className={numbered ? "nameplate-badge" : "nameplate-badge named"}
+          style={{ backgroundColor: color }}
+        >
           {lineBadge(station.line)}
         </div>
         <div className="nameplate-text">

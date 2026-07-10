@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { useLocation } from "react-router";
 import { subwayColors } from "../constants/subwayColors.ts";
 
 type Point = { x: number; y: number };
@@ -13,12 +14,17 @@ type Train = {
 
 function BackgroundCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { pathname } = useLocation();
+  const playing = pathname === "/play";
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    const context = canvasEl.getContext("2d");
+    if (!context) return;
+    // 이 아래로는 null 이 아님이 확정됩니다(클로저 안에서도 유지).
+    const canvas = canvasEl;
+    const ctx = context;
 
     let canvasW = 0;
     let canvasH = 0;
@@ -135,29 +141,28 @@ function BackgroundCanvas() {
     renderFrame();
     window.addEventListener("resize", initCanvas);
 
-    // 컴포넌트가 사라질 때: 애니메이션 정지 + 리스너 제거
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", initCanvas);
     };
   }, []);
 
+  // 원본 #bg-wrapper: 게임 중(/play)에는 더 강하게 블러 처리
   return (
-    <canvas
-      ref={canvasRef}
+    <div
       aria-hidden="true"
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100vw",
-        height: "100vh",
-        zIndex: -1,
-        filter: "blur(6px)",
-        opacity: 0.7,
+        inset: 0,
+        zIndex: 0,
+        filter: playing ? "blur(16px)" : "blur(6px)",
+        opacity: playing ? 0.4 : 0.7,
+        transition: "filter 1s ease-in-out, opacity 1s ease-in-out",
         pointerEvents: "none",
       }}
-    />
+    >
+      <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
+    </div>
   );
 }
 
