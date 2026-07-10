@@ -1,0 +1,208 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Noto+Sans+KR:wght@400;700;900&display=swap");
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Outfit", "Noto Sans KR", sans-serif;
+  background-color: #f2f2e9;
+  color: #333;
+}
+
+#root { width: 100%; }
+main { position: relative; z-index: 1; }
+
+/* 한 화면에 꽉 차는 페이지(홈·게임·결과) 세로 가운데 정렬 */
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+/* 네비게이션 바 */
+.navbar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+.navbar a { color: #333; text-decoration: none; }
+.navbar a[aria-current="page"] { color: #0052a4; }
+
+/* 타이틀 & 메뉴 버튼 */
+.title {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -3px;
+  margin: 0 0 1.5rem;
+  line-height: 1;
+}
+.metro-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  transition: transform 0.1s ease-out;
+}
+.metro-btn:hover { transform: translateX(10px); }
+.metro-btn .arrow { color: #333; font-size: 2rem; line-height: 1; }
+.metro-btn .label {
+  background-color: #568eba;
+  color: #fff;
+  font-weight: 700;
+  padding: 4px 12px;
+}
+
+/* 게임: HUD */
+.hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.8rem;
+  font-weight: 900;
+  pointer-events: none;
+  text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+}
+.hud .time-warning { color: #e60000; animation: pulse 1s infinite; }
+
+/* 게임: 역명판 */
+.nameplate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 320px;
+  margin-bottom: 1.5rem;
+  animation: slideUpFadeIn 0.3s ease-out;
+}
+.nameplate-bar { position: absolute; width: 150%; height: 1.5rem; z-index: 0; }
+.nameplate-pill {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 8px solid;
+  border-radius: 9999px;
+  padding: 0.75rem 2rem 0.75rem 0.75rem;
+  min-width: 280px;
+}
+.nameplate-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.5rem;
+  height: 3.5rem;
+  padding: 0 0.75rem;
+  margin-right: 1rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+.nameplate-text { display: flex; flex-direction: column; align-items: center; }
+.nameplate-name {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  margin-bottom: 0.25rem;
+}
+.nameplate-sub {
+  display: flex;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  border-top: 2px solid #eee;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #888;
+}
+.nameplate-sub .sep { color: #ccc; }
+
+/* 게임: 입력창 */
+.type-input {
+  width: 100%;
+  max-width: 28rem;
+  padding: 1rem 2rem;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.9);
+  border: 4px solid #333;
+  border-radius: 9999px;
+  outline: none;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+.type-input:focus { border-color: #0052a4; transform: translateY(-2px); }
+
+/* 일시정지 오버레이 */
+.esc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+}
+.esc-overlay h2 { margin: 0 0 1rem; font-size: 3rem; font-weight: 900; }
+
+/* 결과 화면 */
+.result-title { margin: 0; font-size: 3.5rem; font-weight: 900; color: #e60000; }
+.score-card {
+  margin: 1.5rem 0 2.5rem;
+  padding: 2rem 3rem;
+  text-align: center;
+  background: #fff;
+  border: 4px solid #333;
+  border-radius: 12px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.15);
+}
+.score-card .label {
+  margin-bottom: 0.5rem;
+  color: #888;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+.score-card .value { font-size: 4.5rem; font-weight: 900; }
+
+/* 역 정보 목록 */
+.stations { max-width: 900px; margin: 0 auto; padding: 5rem 1rem 2rem; }
+.stations .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+.stations ul { list-style: none; padding: 0; display: grid; gap: 0.25rem; }
+
+/* 애니메이션 */
+@keyframes slideUpFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
