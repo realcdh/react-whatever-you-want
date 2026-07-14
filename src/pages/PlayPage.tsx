@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { ChangeEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useNavigate } from "react-router";
 import { useStations } from "../hooks/useStations.ts";
@@ -18,6 +18,12 @@ function PlayPage() {
   // 뽑기용 시드(0 이상 1 미만 난수). 초기엔 역 목록 길이를 몰라 인덱스 대신 시드를 저장하고,
   // 나중에 Math.floor(pickSeed * 길이)로 실제 위치를 계산합니다. 이 값이 바뀌면 다음 역이 뽑힙니다.
   const [pickSeed, setPickSeed] = useState(() => Math.random());
+
+  // 타이머는 "카운터를 1씩 빼는" 방식 대신 실제 시각(Date.now)으로 남은 시간을 계산합니다.
+  // setTimeout/Interval은 정확한 간격을 보장하지 않아(백그라운드 스로틀링 포함) 드리프트가 쌓이는데,
+  // 마감 시각(deadline)과의 차이를 매 틱 다시 계산하면 어긋나도 자동으로 보정됩니다.
+  const deadlineRef = useRef<number | null>(null); // 종료 시각(ms). 일시정지 중엔 null.
+  const remainingMsRef = useRef(60000); // 남은 시간(ms). 시작/재개 기준값.
 
   // 선택한 호선으로 단어 풀 만들기 (중복 역명 제거)
   const words = useMemo(() => {
@@ -40,12 +46,30 @@ function PlayPage() {
     return words[Math.floor(pickSeed * words.length)];
   }, [words, pickSeed]);
 
-  // 1초마다 시간 감소 (로딩·오류 중이거나 0/일시정지면 멈춤)
+  // 타이머: 실제 시각 기준으로 남은 시간을 계산 → 드리프트·백그라운드 스로틀링에도 자체 보정
   useEffect(() => {
-    if (loading || error || timeLeft <= 0 || paused) return;
-    const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
-    return () => clearTimeout(id);
-  }, [loading, error, timeLeft, paused]);
+    if (loading || error || paused) return; // 로딩·오류·일시정지 중엔 정지
+
+    // 이 구간(플레이)에 진입할 때, 남은 시간 기준으로 마감 시각을 확정
+    let deadline = deadlineRef.current;
+    if (deadline === null) {
+      deadline = Date.now() + remainingMsRef.current;
+      deadlineRef.current = deadline;
+    }
+
+    const id = setInterval(() => {
+      const remainingMs = Math.max(0, deadline - Date.now());
+      setTimeLeft(Math.ceil(remainingMs / 1000));
+      if (remainingMs <= 0) clearInterval(id);
+    }, 200);
+
+    return () => {
+      clearInterval(id);
+      // 일시정지/이탈 시 남은 시간을 저장하고 마감 시각 해제 → 재개 시 이어서 계산
+      remainingMsRef.current = Math.max(0, deadline - Date.now());
+      deadlineRef.current = null;
+    };
+  }, [loading, error, paused]);
 
   // 시간이 다 되면 결과 페이지로 점수 전달
   useEffect(() => {
@@ -89,6 +113,8 @@ function PlayPage() {
     setTimeLeft(60);
     setInput("");
     setPickSeed(Math.random());
+    remainingMsRef.current = 60000; // 남은 시간 60초로 리셋
+    deadlineRef.current = null; // 마감 시각 재설정 유도
     setPaused(false);
   }
 
