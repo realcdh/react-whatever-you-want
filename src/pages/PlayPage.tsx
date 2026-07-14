@@ -40,12 +40,12 @@ function PlayPage() {
     return words[Math.floor(pickSeed * words.length)];
   }, [words, pickSeed]);
 
-  // 1초마다 시간 감소 (0이거나 일시정지면 멈춤)
+  // 1초마다 시간 감소 (로딩·오류 중이거나 0/일시정지면 멈춤)
   useEffect(() => {
-    if (timeLeft <= 0 || paused) return;
+    if (loading || error || timeLeft <= 0 || paused) return;
     const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearTimeout(id);
-  }, [timeLeft, paused]);
+  }, [loading, error, timeLeft, paused]);
 
   // 시간이 다 되면 결과 페이지로 점수 전달
   useEffect(() => {
@@ -104,6 +104,7 @@ function PlayPage() {
           <StationNameplate station={current} />
         </div>
         <input
+          key={pickSeed}
           className="type-input"
           value={input}
           onChange={handleChange}
