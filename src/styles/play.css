@@ -1,0 +1,72 @@
+/* 게임 화면 (PlayPage): HUD · 게임 영역 · 입력창 · 일시정지 */
+
+/* 상단 HUD */
+.top-bar {
+  position: absolute; top: 0; left: 0; width: 100%;
+  padding: 2rem 3rem;
+  display: flex; justify-content: space-between;
+  font-weight: 900; font-size: 1.8rem; pointer-events: none;
+  text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
+}
+.top-bar .time-warning { color: #e60000; animation: pulse 1s infinite; }
+
+/* 게임 영역 */
+.game-area {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 100%; max-width: 42rem; padding: 0 1.5rem;
+}
+.word-container {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 8rem; margin-bottom: 2.5rem;
+}
+
+/* 입력창 */
+.type-input {
+  width: 100%; max-width: 28rem;
+  text-align: center; font-size: 2.25rem; font-weight: 700;
+  padding: 1rem 0;
+  background: rgba(255, 255, 255, 0.9);
+  border: 4px solid #333; border-radius: 9999px; outline: none;
+  transition: all 0.2s; box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+.type-input:focus { border-color: #0052a4; transform: translateY(-2px); box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.15); }
+
+/* ESC 일시정지 오버레이 */
+.esc-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(8px);
+}
+.esc-hub {
+  width: 150px; height: 150px; border-radius: 50%; background: #333;
+  position: relative; margin-bottom: 40px; animation: pulse-hub 2s infinite ease-in-out;
+}
+.esc-hub::before, .esc-hub::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); border-radius: 50%; border: 15px solid rgba(0, 0, 0, 0.1);
+}
+.esc-hub::before { width: 200px; height: 200px; }
+.esc-hub::after { width: 250px; height: 250px; border-width: 8px; border-color: rgba(0, 0, 0, 0.05); }
+.esc-line1 {
+  position: absolute; width: 800px; height: 1rem; background: #2b3990;
+  top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-12deg);
+  opacity: 0.8; border-radius: 9999px;
+}
+.esc-line2 {
+  position: absolute; width: 800px; height: 1rem; background: #ef7c1c;
+  top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(45deg);
+  opacity: 0.8; border-radius: 9999px;
+}
+.esc-orbit { position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; transform: translate(-50%, -50%); pointer-events: none; }
+.esc-train1 {
+  position: absolute; top: 50%; width: 2rem; height: 2rem; background: #333;
+  animation: flow-train-1 8s infinite linear, pulse-train 1.5s infinite ease-in-out;
+}
+.esc-train2 {
+  position: absolute; left: 50%; width: 1.5rem; height: 1.5rem;
+  background: #f2f2e9; border: 4px solid #333; border-radius: 9999px;
+  animation: flow-train-2 11s infinite linear 2s, pulse-train 1.5s infinite ease-in-out;
+}
+.esc-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2.5rem; height: 2.5rem; background: #fff; border-radius: 9999px; }
+.esc-title { font-size: 3rem; font-weight: 900; margin: 0 0 3rem; color: #333; }
+.esc-menu-list { display: flex; flex-direction: column; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; }

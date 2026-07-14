@@ -1,0 +1,81 @@
+/* 전역·공용 스타일 — 모든 화면이 공유합니다. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Outfit", "Noto Sans KR", sans-serif;
+  background-color: #f2f2e9;
+  color: #333;
+  user-select: none;
+}
+
+#root { width: 100%; }
+main { position: relative; z-index: 10; }
+
+/* 각 화면: 100vh 중앙 정렬 */
+.screen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 네비게이션 바 */
+.navbar {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 1rem;
+  padding: 4px 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.navbar a { color: #333; text-decoration: none; opacity: 0.65; }
+.navbar a[aria-current="page"] { opacity: 1; color: #0052a4; }
+
+/* 미니메트로 메뉴 버튼 (홈·결과·일시정지·404 공용) */
+.metro-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  transition: transform 0.1s ease-out;
+}
+.metro-btn:hover { transform: translateX(10px); }
+.metro-btn:active { transform: translateX(5px); }
+.metro-btn .arrow {
+  color: #333;
+  font-size: 2.25rem;
+  line-height: 1;
+  display: inline-block;
+}
+.metro-btn .arrow.rot90 { transform: rotate(90deg); }
+.metro-btn .arrow.rot180 { transform: rotate(180deg); }
+.metro-btn .arrow.rot135neg { transform: rotate(-135deg); }
+.metro-btn .label {
+  background-color: #568eba;
+  padding: 4px 12px;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 공용 애니메이션 */
+@keyframes slideUpFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes pulse-hub { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes pulse-train { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+@keyframes flow-train-1 { 0% { transform: translate(-300px, 0) rotate(45deg); } 100% { transform: translate(300px, 0) rotate(45deg); } }
+@keyframes flow-train-2 { 0% { transform: translate(300px, 300px); } 100% { transform: translate(-300px, -300px); } }

@@ -8,6 +8,7 @@ import HomePage from "./pages/HomePage.tsx";
 import PlayPage from "./pages/PlayPage.tsx";
 import ResultPage from "./pages/ResultPage.tsx";
 import StationsPage from "./pages/StationsPage.tsx";
+import NotFoundPage from "./pages/NotFoundPage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -19,6 +20,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="play" element={<PlayPage />} />
             <Route path="result" element={<ResultPage />} />
             <Route path="stations" element={<StationsPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
