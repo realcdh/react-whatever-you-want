@@ -1,16 +1,7 @@
 import { useRef, useEffect } from "react";
 import { useLocation } from "react-router";
 import { subwayColors } from "../constants/subwayColors.ts";
-
-type Point = { x: number; y: number };
-type MetroLine = { color: string; points: Point[] };
-type Train = {
-  lineIndex: number;
-  segment: number;
-  progress: number;
-  speed: number;
-  direction: number;
-};
+import type { Point, MetroLine, Train } from "../utils/metroMap.ts";
 
 function BackgroundCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
