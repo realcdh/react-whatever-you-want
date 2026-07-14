@@ -2,20 +2,17 @@ import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 
 interface Settings {
-  region: string;
   line: string;
-  setRegion: (region: string) => void;
   setLine: (line: string) => void;
 }
 
 const SettingsContext = createContext<Settings | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
-  const [region, setRegion] = useState("서울 지역");
   const [line, setLine] = useState("3호선");
 
   return (
-    <SettingsContext.Provider value={{ region, line, setRegion, setLine }}>
+    <SettingsContext.Provider value={{ line, setLine }}>
       {children}
     </SettingsContext.Provider>
   );
