@@ -15,8 +15,9 @@ function PlayPage() {
   const [timeLeft, setTimeLeft] = useState(60);
   const [input, setInput] = useState("");
   const [paused, setPaused] = useState(false);
-  // 0~1 사이 난수. 이 값 + 단어 풀로 현재 역을 "결정적으로" 고릅니다.
-  const [pickIndex, setPickIndex] = useState(() => Math.random());
+  // 뽑기용 시드(0 이상 1 미만 난수). 초기엔 역 목록 길이를 몰라 인덱스 대신 시드를 저장하고,
+  // 나중에 Math.floor(pickSeed * 길이)로 실제 위치를 계산합니다. 이 값이 바뀌면 다음 역이 뽑힙니다.
+  const [pickSeed, setPickSeed] = useState(() => Math.random());
 
   // 선택한 호선으로 단어 풀 만들기 (중복 역명 제거)
   const words = useMemo(() => {
@@ -33,11 +34,11 @@ function PlayPage() {
     return result;
   }, [stations, line]);
 
-  // 현재 역(파생 상태). pickIndex가 바뀌면 다음 역이 뽑힙니다.
+  // 현재 역(파생 상태). pickSeed가 바뀌면 다음 역이 뽑힙니다.
   const current = useMemo(() => {
     if (words.length === 0) return null;
-    return words[Math.floor(pickIndex * words.length)];
-  }, [words, pickIndex]);
+    return words[Math.floor(pickSeed * words.length)];
+  }, [words, pickSeed]);
 
   // 1초마다 시간 감소 (0이거나 일시정지면 멈춤)
   useEffect(() => {
@@ -72,7 +73,7 @@ function PlayPage() {
     if (current && val.trim() === current.name) {
       setScore((s) => s + 1);
       setInput("");
-      setPickIndex(Math.random()); // 다음 역
+      setPickSeed(Math.random()); // 다음 역
     }
   }
 
@@ -87,7 +88,7 @@ function PlayPage() {
     setScore(0);
     setTimeLeft(60);
     setInput("");
-    setPickIndex(Math.random());
+    setPickSeed(Math.random());
     setPaused(false);
   }
 
