@@ -2,15 +2,35 @@ import { useState, useEffect } from "react";
 import type { Station } from "../types/station.ts";
 import { fetchStations } from "../api/subwayApi.ts";
 
+
+let cache: Station[] | null = null;
+let inflight: Promise<Station[]> | null = null;
+
+function loadStations(): Promise<Station[]> {
+  if (cache) return Promise.resolve(cache);
+  if (!inflight) {
+    inflight = fetchStations()
+      .then((data) => {
+        cache = data;
+        return data;
+      })
+      .finally(() => {
+        inflight = null; 
+      });
+  }
+  return inflight;
+}
+
 export function useStations() {
-  const [stations, setStations] = useState<Station[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [stations, setStations] = useState<Station[]>(cache ?? []);
+  const [loading, setLoading] = useState(cache === null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (cache) return;
     let ignore = false; // 화면을 벗어난 뒤 상태 변경 방지
 
-    fetchStations()
+    loadStations()
       .then((data) => {
         if (!ignore) setStations(data);
       })
