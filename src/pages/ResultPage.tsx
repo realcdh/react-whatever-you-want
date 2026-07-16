@@ -1,9 +1,17 @@
 import { useLocation, useNavigate } from "react-router";
 
+function hasScore(state: unknown): state is { score: number } {
+  if (typeof state !== "object" || state === null) return false;
+  if (!("score" in state)) return false;
+  return typeof state.score === "number";
+}
+
 function ResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const score = (location.state as { score?: number } | null)?.score ?? 0;
+
+  const state: unknown = location.state;
+  const score = hasScore(state) ? state.score : 0;
 
   return (
     <section className="screen">
