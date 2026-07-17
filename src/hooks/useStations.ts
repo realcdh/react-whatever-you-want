@@ -15,7 +15,7 @@ function loadStations(): Promise<Station[]> {
         return data;
       })
       .finally(() => {
-        inflight = null; 
+        inflight = null;
       });
   }
   return inflight;
@@ -25,6 +25,7 @@ export function useStations() {
   const [stations, setStations] = useState<Station[]>(cache ?? []);
   const [loading, setLoading] = useState(cache === null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // 값이 바뀌면 아래 effect가 다시 실행 → 재요청
 
   useEffect(() => {
     if (cache) return;
@@ -44,7 +45,14 @@ export function useStations() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [reloadKey]);
 
-  return { stations, loading, error };
+  // 실패 시 재시도: 상태를 초기화하고 다시 요청 (실패 시 cache는 비어 있어 effect가 재요청함)
+  function retry() {
+    setLoading(true);
+    setError(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  return { stations, loading, error, retry };
 }
