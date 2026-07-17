@@ -7,7 +7,7 @@ import type { Station } from "../types/station.ts";
 import StationNameplate from "../components/StationNameplate.tsx";
 
 function PlayPage() {
-  const { stations, loading, error } = useStations();
+  const { stations, loading, error, retry } = useStations();
   const { line } = useSettings();
   const navigate = useNavigate();
 
@@ -85,10 +85,36 @@ function PlayPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (loading) return <section className="screen"><p>역 정보를 불러오는 중…</p></section>;
-  if (error) return <section className="screen"><p>오류: {error}</p></section>;
-  if (words.length === 0) return <section className="screen"><p>이 호선의 역 정보가 없습니다.</p></section>;
-  if (!current) return <section className="screen"><p>준비 중…</p></section>;
+  // role="status"/"alert"로 현재 상태를 스크린리더에도 전달하고, 오류 시 재시도 경로 제공
+  if (loading)
+    return (
+      <section className="screen">
+        <p className="status" role="status">역 정보를 불러오는 중…</p>
+      </section>
+    );
+  if (error)
+    return (
+      <section className="screen">
+        <div className="status" role="alert">
+          <p>역 정보를 불러오지 못했어요: {error}</p>
+          <button type="button" className="retry" onClick={retry}>
+            다시 시도
+          </button>
+        </div>
+      </section>
+    );
+  if (words.length === 0)
+    return (
+      <section className="screen">
+        <p className="status" role="status">이 호선의 역 정보가 없습니다.</p>
+      </section>
+    );
+  if (!current)
+    return (
+      <section className="screen">
+        <p className="status" role="status">준비 중…</p>
+      </section>
+    );
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     if (paused) return;
@@ -120,9 +146,16 @@ function PlayPage() {
 
   return (
     <section className="screen">
+      <h1 className="sr-only">타이핑 게임 진행 중</h1>
       <div className="top-bar">
-        <div>SCORE: {score}</div>
-        <div className={timeLeft <= 10 ? "time-warning" : ""}>{timeLeft}s</div>
+        {/* 점수는 변할 때만 조용히 낭독(polite), 시간은 매초 낭독되면 소음이라 label만 제공 */}
+        <div aria-live="polite">SCORE: {score}</div>
+        <div
+          className={timeLeft <= 10 ? "time-warning" : ""}
+          aria-label={`남은 시간 ${timeLeft}초`}
+        >
+          {timeLeft}s
+        </div>
       </div>
 
       <div className="game-area">
