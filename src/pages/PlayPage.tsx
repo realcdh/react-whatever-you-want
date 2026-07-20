@@ -143,11 +143,16 @@ function PlayPage() {
       <div className="top-bar">
         <div aria-live="polite">SCORE: {score}</div>
         <div
+          role="timer"
           className={timeLeft <= 10 ? "time-warning" : ""}
           aria-label={`남은 시간 ${timeLeft}초`}
         >
           {timeLeft}s
         </div>
+      </div>
+
+      <div className="sr-only" role="status" aria-live="polite">
+        {timeLeft <= 10 && timeLeft > 0 ? "10초 남았습니다" : ""}
       </div>
 
       <div className="game-area">
