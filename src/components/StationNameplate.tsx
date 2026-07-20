@@ -14,13 +14,12 @@ function StationNameplate({ station }: { station: Station }) {
     <div className="nameplate">
       <div className="nameplate-bar" style={{ backgroundColor: color }} aria-hidden="true" />
       <div className="nameplate-pill" style={{ borderColor: color }}>
-        {/* 배지엔 "3"만 보이지만, 스크린리더는 "3호선"으로 읽도록 aria-label 지정 */}
         <div
           className={numbered ? "nameplate-badge" : "nameplate-badge named"}
           style={{ backgroundColor: color }}
-          aria-label={station.line}
         >
           {lineBadge(station.line)}
+          {numbered && <span className="sr-only">호선</span>}
         </div>
         <div className="nameplate-text">
           <div className="nameplate-name">{station.name}</div>
