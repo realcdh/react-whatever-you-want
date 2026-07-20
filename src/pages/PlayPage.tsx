@@ -141,7 +141,17 @@ function PlayPage() {
     <section className="screen">
       <h1 className="sr-only">타이핑 게임 진행 중</h1>
       <div className="top-bar">
-        <div aria-live="polite">SCORE: {score}</div>
+        <div className="hud-left">
+          <button
+            type="button"
+            className="pause-btn"
+            onClick={() => setPaused(true)}
+            aria-label="일시정지"
+          >
+            ❚❚
+          </button>
+          <span aria-live="polite">SCORE: {score}</span>
+        </div>
         <div
           role="timer"
           className={timeLeft <= 10 ? "time-warning" : ""}

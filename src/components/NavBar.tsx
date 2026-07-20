@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { NavLink } from "react-router";
+import { NavLink, useLocation } from "react-router";
 
 function NavBar() {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+
+  if (location.pathname === "/play") return null;
 
   return (
     <nav className="navbar" aria-label="주요 메뉴">

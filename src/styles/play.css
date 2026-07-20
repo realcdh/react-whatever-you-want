@@ -70,3 +70,17 @@
 .esc-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 2.5rem; height: 2.5rem; background: #fff; border-radius: 9999px; }
 .esc-title { font-size: 3rem; font-weight: 900; margin: 0 0 3rem; color: #333; }
 .esc-menu-list { display: flex; flex-direction: column; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; }
+
+.top-bar .hud-left { display: flex; align-items: center; gap: 1rem; }
+.pause-btn {
+  pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 2.6rem; height: 2.6rem;
+  padding: 0;
+  border: 3px solid #333; border-radius: 50%;
+  background: #fff; color: #333;
+  font-size: 0.9rem; letter-spacing: 1px;
+  text-shadow: none; cursor: pointer;
+  box-shadow: 2px 2px 0 #333;
+}
+.pause-btn:hover { background: #333; color: #fff; }
