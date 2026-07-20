@@ -16,7 +16,7 @@ function ResultPage() {
   return (
     <section className="screen">
       <div className="gameover">
-        <h2 className="gameover-title">운행 종료</h2>
+        <h1 className="gameover-title">운행 종료</h1>
         <div className="score-card">
           <div className="card-label">최종 점수</div>
           <div className="card-value">{score}</div>

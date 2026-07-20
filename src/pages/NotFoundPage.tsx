@@ -6,7 +6,7 @@ function NotFoundPage() {
   return (
     <section className="screen">
       <div className="gameover">
-        <h2 className="gameover-title">404</h2>
+        <h1 className="gameover-title">404</h1>
         <p style={{ color: "#555", margin: "0 0 2rem" }}>
           찾으시는 역(페이지)이 없습니다.
         </p>
