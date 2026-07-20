@@ -16,6 +16,7 @@ function PlayPage() {
   const [input, setInput] = useState("");
   const [paused, setPaused] = useState(false);
   const [pickSeed, setPickSeed] = useState(() => Math.random());
+  const [shake, setShake] = useState(false);
 
   const deadlineRef = useRef<number | null>(null);
   const remainingMsRef = useRef(60000);
@@ -123,7 +124,10 @@ function PlayPage() {
   function handleKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && current) {
       const val = input.trim();
-      if (val.length > 0 && val !== current.name) setInput("");
+      if (val.length > 0 && val !== current.name) {
+        setInput("");
+        setShake(true);
+      }
     }
   }
 
@@ -150,7 +154,9 @@ function PlayPage() {
           >
             ❚❚
           </button>
-          <span aria-live="polite">SCORE: {score}</span>
+          <span aria-live="polite" className="score">
+            SCORE: <span key={score} className="score-num">{score}</span>
+          </span>
         </div>
         <div
           role="timer"
@@ -167,15 +173,16 @@ function PlayPage() {
 
       <div className="game-area">
         <div className="word-container">
-          <StationNameplate station={current} />
+          <StationNameplate key={pickSeed} station={current} />
         </div>
         <input
           key={pickSeed}
           ref={inputRef}
-          className="type-input"
+          className={shake ? "type-input shake" : "type-input"}
           value={input}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
+          onAnimationEnd={() => setShake(false)}
           autoFocus
           autoComplete="off"
           spellCheck={false}

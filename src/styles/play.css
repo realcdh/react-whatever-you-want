@@ -84,3 +84,25 @@
   box-shadow: 2px 2px 0 #333;
 }
 .pause-btn:hover { background: #333; color: #fff; }
+
+.score-num { display: inline-block; animation: score-bump 0.35s ease-out; }
+@keyframes score-bump {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.55); color: #00a84f; }
+  100% { transform: scale(1); }
+}
+
+.nameplate { animation: nameplate-pop 0.28s ease-out; }
+@keyframes nameplate-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.06); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.type-input.shake { animation: input-shake 0.35s; border-color: #e60000; box-shadow: 4px 4px 0 rgba(230, 0, 0, 0.25); }
+@keyframes input-shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-9px); }
+  40%, 60% { transform: translateX(9px); }
+}
